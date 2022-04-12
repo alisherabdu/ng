@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dotnet-config-file
+data:
+  appsettings.Production.json: |
+    {
+      "Logging": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft.AspNetCore": "Warning"
+        }
+      },
+      "ConnectionStrings": {
+        "Default" : "Data Source=app.db; Cache=Shared"
+      },
+      "ExampleSetting":{
+        "One":"from COnfigMap2222222Secondary333333333",
+        "Two":"two"
+      },
+      "AllowedHosts": "*"
+    }
+  appsettings.json: |
+    {
+      "Logging": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft.AspNetCore": "Warning"
+        }
+      },
+      "ConnectionStrings": {
+        "Default" : "Data Source=app.db; Cache=Shared"
+      },
+      "ExampleSetting":{
+        "One":"from COnfigMap2222222Main",
+        "Two":"two"
+      },
+      "KeyVaultConfig": {
+        "KVUrl": "https://my-key-vault-store.vault.azure.net/",
+        "TenantId": "6fecd065-cb31-41b4-985c-60f2fdf1720f",
+        "ClientId": "7bcbe235-537e-4db5-96c8-8a39d7675a5b",
+        "ClientSecretId": "nNa7Q~kRk_CYkjxMAvSQtkA2oe.DIKnCkqBTM"
+      },
+      "AllowedHosts": "*"
+    }

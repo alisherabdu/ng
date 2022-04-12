@@ -1,0 +1,184 @@
+https://www.youtube.com/watch?v=dwMFg6uxQ0I
+dotnet new web -o dapper_minimal_api
+--created app.db with User tabel
+dotnet add package Dapper
+dotnet add package Microsoft.Data.Sqlite                   #dotnet add package System.Data.SQLite
+dotnet add package System.Data
+dotnet add package Microsoft.Extensions.Configuration.Abstractions
+dotnet add package Swashbuckle.AspNetCore               #for swagger
+
+
+--upload image to docker hub
+
+kubectl apply -f deployment.yaml
+kubectl create -f deployment.yaml
+kubectl delete -f deployment.yaml
+kubectl get pod
+kubectl exec -it dotnet-app-9cfff69d5-4445t -- /bin/sh          #published content in /app folder
+kubectl apply -f secret-file.yaml
+kubectl apply -f config-file.yaml
+kubectl get secrets
+kubectl get configmap
+kubectl logs dotnet-app-7794ffbccd-dltt6                #optional
+
+kubectl apply -f service.yaml                   #this is service but the type is NodePort, here pod port and service port must be 80 so that Node port can reach them 
+..and http://localhost:31000/settings
+kubectl exec -it dotnet-app-5bb74f959c-7kjdr -- /bin/sh
+
+
+
+
+
+---Configure Key Vault Azure
+https://docs.microsoft.com/en-us/aspnet/core/security/key-vault-configuration?view=aspnetcore-6.0#use-application-id-and-x509-certificate-for-non-azure-hosted-apps
+https://docs.microsoft.com/en-us/cli/azure/install-azure-cli
+https://www.ssl.com/how-to/create-a-pfx-p12-certificate-file-using-openssl?utm_source=youtube&utm_medium=video&utm_campaign=pfxpk12%2F
+az login
+az group create --name "myKVaultResourceGroup" -l "CentralUS"
+az keyvault create --name "my-key-vault-store" --resource-group "myKVaultResourceGroup" --location "CentralUS"
+az keyvault secret set --vault-name "my-key-vault-store" --name "ExamplePassword" --value "hVFkk965BuUv"
+az keyvault secret set --vault-name "my-key-vault-store" --name "ExampleSetting--Two" --value "somesecrte value"
+az keyvault secret show --name "ExampleSetting--Two" --vault-name "my-key-vault-store" --query "value"
+
+dotnet add package Azure.Extensions.AspNetCore.Configuration.Secrets
+dotnet add package Azure.Identity
+dotnet add package Azure.Security.KeyVault.Secrets
+
+
+
+
+---Polly
+dotnet add package Polly
+
+
+
+--create secret
+dotnet user-secrets init
+dotnet user-secrets set "KeyVaultConfig:ClientSecretId" ""
+dotnet user-secrets list
+dotnet user-secrets remove "AuthorApiKey"
+
+
+
+
+
+
+
+--deploy on defferent namespace
+kubectl create namespace meniki
+kubectl -n meniki apply -f deployment.yaml
+kubectl -n meniki apply -f config-file.yaml
+kubectl -n meniki apply -f service.yaml
+kubectl get deploy -n meniki
+kubectl -n meniki get pods
+
+
+
+--serilog
+dotnet add package Serilog.AspNetCore
+dotnet add package SerilogTimings
+dotnet add package Serilog.Sinks.Seq
+docker run --name seq -d --restart unless-stopped -e ACCEPT_EULA=Y -p 5341:80 datalust/seq:latest     #just run locally to monitor logs
+
+
+
+
+--cert manager
+curl -LO https://github.com/cert-manager/cert-manager/releases/download/v1.8.0/cert-manager.yaml
+kubectl create ns cert-manager
+kubectl apply --validate=false -f cert-manager-1.8.0.yaml
+kubectl -n cert-manager get all
+
+--test selfsigned cert
+kubectl create ns cert-manager-test
+kubectl apply -f issuer.yaml                            #will create issuer in namespace
+kubectl apply -f certificate.yaml                            #cert manager will create certificate request to LetsEncrypt and certificate will be issued
+kubectl describe certificate -n cert-manager-test           #you can see all the steps being done automatically
+kubectl get secrets -n cert-manager-test                # and you can see the certs finally
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+--SOME DRAFTS
+tree cluster-state
+kubectl cluster-info dump --all-namespaces --output-directory=cluster-state --output=json
+jq '.items[]?.status.containerStatuses[]?.image' cluster-state/kube-system/pods.json                                            #Show me all the container images names in the kube-system namespace.
+jq '.items[]?.status.containerStatuses[]? | [.image, .state[]?.startedAt]' cluster-state/default/pods.json                  #Show me when all the container images were started in the default namespace.
+kubectl describe pods
+
+POD=$(kubectl get pod  -o jsonpath="{.items[0].metadata.name}")   #getname of first pod
+kubectl exec $POD -- cat entrypoint.sh                  #Inspect the script contents inside the container file system
+
+kubectl exec $POD -- uptime
+kubectl exec $POD -- ps
+kubectl exec $POD -- stat -f /
+kubectl exec $POD --container random-logger -- lsof
+kubectl exec $POD --container random-logger -- iostat
+kubectl exec $POD --container random-logger -- ls -a -l                 #specific container
+
+--services are only accessable inside the cluster by eg pods, so inorder to easily ping test the container you build another pod with tooling like curl and ping your actual container with that curl
+kubectl run curler --image=radial/busyboxplus:curl --command -- sleep 3600    # spin up the curl
+kubectl exec -it curler -- curl http://webapp1-svc                              #access one of service dns which is bunded to container 
+
+watch kubectl get deployments,pods,services
+
+
+kubectl expose deployment dotnet-app --type=NodePort --name=dotnet-svc
+kubectl get svc
+kubectl describe services dotnet-svc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+kubectl expose pod dotnet-app-6b77d594d5-4z2xl --name=dotnet-svc --port=8081 --type=NodePort                          
+kubectl get svc
+kubectl describe service dotnet-svc
+kubectl get pods --selector="app=dotnet-app" --output=wide
+curl http://192.168.0.171:32436/settings
+
+kubectl exec -it dotnet-app-6b77d594d5-4z2xl -- /bin/sh
+
+kubectl get pod -o wide
+
+
+
+
+
+
+kubectl get event -n default   
+kubectl get deploy
+kubectl describe deployment
+kubectl delete svc dotnet-svc
+kubectl get svc -l app=dotnet-app            #with label
+
+
+
+
+
+
+--tired this but did not work
+docker run -d -p 5000:5000 --restart=always --name registry registry:2                 #creates local repo
+docker tag dapper:1.3 localhost:5000/dapper
+docker push localhost:5000/dapper
+--put this link to deployment.yaml  localhost:5000/dapper
